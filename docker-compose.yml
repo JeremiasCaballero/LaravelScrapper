@@ -1,0 +1,49 @@
+docker-compose.ymlversion:"3.7"# version del docker-compose(?)
+services: 
+  nginx:# 1er servicio: nginx
+    image: nginx:stable-alpine # imagen de docker hub que vamos a usar
+    container_name: nginx # nombre para referirse al servicio
+    ports:
+      -8000:80# puerto de mi pc:puerto del servicio
+    volumes:
+      - ./src:/var/www/html # carpeta local/ vincula a carpeta de nginx
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf # archivo local / reflejado en archivo de la imagen
+    depends_on:# para correr este servicio debe estar corriendo php y mysql antes
+      - php
+      - mysql
+    networks:# la red que los conecta se llama laravel
+      - laravel
+
+  mysql:# 2do servici
+    image: mysql:5.7# imagen de docker hub
+    container_name: mysql # nombre de referencia del servicio
+    restart: unless-stopped # si tiene algun problema, reinicialo
+    tty:true# aqui si le fallo joven xD, 👀 leo los comentarios
+    ports: 
+      -33069:3306# puerto local:puerto del servicio
+    volumes:
+      - ./mysql:/var/lib/mysql # carpeta local:carpeta de config de mysql
+    environment:# datos de configuracion del entorno
+      MYSQL_DATABASE:'homestead'# importante que tengan comillas
+      MYSQL_USER:'homestead'
+      MYSQL_PASSWORD:'secret'
+      MYSQL_ROOT_PASSWORD:'secret.root'
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - laravel # red
+
+  php:# 3er servicio
+    build:# este se construira aqui mismo
+      context: . # ruta de referencia ./
+      dockerfile: Dockerfile # nombre del archivo de configuracion de la imagen 
+    container_name: php #
+    volumes:# carpeta de proyecto local : carpeta del container que da vida a los archivos PHP
+      - ./src:/var/www/html 
+    ports: 8080
+      -9000:80# ya te la sabes 😉
+    networks:
+      - laravel # red
+
+networks:# declaracion de la red
+  laravel:
